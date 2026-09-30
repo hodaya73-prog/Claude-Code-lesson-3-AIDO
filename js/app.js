@@ -896,11 +896,15 @@
       </div></section>`;
   }
 
+  // the personal sheet is no longer offered (the timetable comes from Airtable);
+  // it stays listed only while an older sheet is still connected, so it can be disconnected
+  const shownInSources = (kind) => kind !== 'sheet' || !!state.src.sheet;
+
   function openSources() {
     const dlg = $('#dlgSheet');
     dlg.innerHTML = `<div class="dlg-body"><h2>${esc(t('sources'))}</h2>
       ${HOSTED ? `<div class="warn-box">${esc(t('hostedNoSheets'))}</div>` : ''}
-      ${KINDS.map(sourceSection).join('')}
+      ${KINDS.filter(shownInSources).map(sourceSection).join('')}
       <div class="actions"><button class="btn" data-action="closeDlg">${esc(t('close'))}</button></div></div>`;
     if (!dlg.open) dlg.showModal();
   }
