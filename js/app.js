@@ -1,5 +1,5 @@
 /* Dashboard UI (SPEC §4): 7-day banner, next-test hero, today's schedule, Today's Mission, header grades chip.
-   Data can come from up to three sources that are merged: a personal sheet, the school's exam calendar,
+   Data can come from up to three sources that are merged: an Airtable timetable, the school's exam calendar,
    and a grades-only sheet. With no source connected, sample data is shown. */
 (function () {
   const SP = window.SP;
@@ -32,23 +32,23 @@
 
   // The hosted (Artifact) build sets window.SP_HOSTED: network requests are blocked there, so sheets cannot be read.
   const HOSTED = !!window.SP_HOSTED;
-  const KINDS = ['calendar', 'grades', 'sheet', 'airtable'];
+  const KINDS = ['calendar', 'grades', 'airtable'];
   // storage keys per source: link config + cached raw rows/tabs (so data stays visible offline, SPEC §11)
   // the Airtable config also holds the student's access token — it stays on this device only
-  const CFG = { calendar: 'calendar', grades: 'gradesSrc', sheet: 'sheetLink', airtable: 'airtableSrc' };
-  const CACHE = { calendar: 'calendarRows', grades: 'gradesRows', sheet: 'tabs', airtable: 'airtableRows' };
+  const CFG = { calendar: 'calendar', grades: 'gradesSrc', airtable: 'airtableSrc' };
+  const CACHE = { calendar: 'calendarRows', grades: 'gradesRows', airtable: 'airtableRows' };
 
-  const legacyId = store.get('sheetId', null); // older builds stored only the sheet id
+  // the personal sheet source was removed (the timetable comes from Airtable): drop what older builds saved
+  ['sheetLink', 'tabs', 'sheetId'].forEach((k) => store.del(k));
   const state = {
     lang: store.get('lang', (navigator.language || 'en').toLowerCase().startsWith('he') ? 'he' : 'en'),
     src: {
       calendar: store.get(CFG.calendar, null), // { input, link, gid, tabName }
       grades: store.get(CFG.grades, null),
-      sheet: store.get(CFG.sheet, null) || (legacyId ? { input: '', link: { kind: 'sheet', id: legacyId, gid: null } } : null),
       airtable: store.get(CFG.airtable, null), // { input, link: { baseId, tableId }, token }
     },
-    parsed: { calendar: null, grades: null, sheet: null, airtable: null }, // { data, issues }
-    errors: { calendar: false, grades: false, sheet: false, airtable: false },
+    parsed: { calendar: null, grades: null, airtable: null }, // { data, issues }
+    errors: { calendar: false, grades: false, airtable: false },
     lastSync: store.get('lastSync', null),
     sessions: store.get('sessions', []),
     localExams: store.get('localExams', []),
@@ -75,10 +75,6 @@
 
   // ---------- parsing raw rows into data ----------
   function parseSource(kind, cache) {
-    if (kind === 'sheet') {
-      const r = SH.normalize(cache);
-      return { data: r.data, issues: r.issues };
-    }
     if (kind === 'airtable') {
       const r = SH.parseScheduleRows(cache, 'Airtable');
       return { data: { schedule: r.schedule }, issues: r.issues };
@@ -106,11 +102,11 @@
     let value;
     const p = state.parsed;
     const hasManual = state.manualGrades.length > 0 || state.manualLessons.length > 0;
-    if (!p.sheet && !p.calendar && !p.grades && !p.airtable && !hasManual) {
+    if (!p.calendar && !p.grades && !p.airtable && !hasManual) {
       value = SP.sample.build(now(), state.lang);
       value.isSample = true;
     } else {
-      const base = p.sheet ? p.sheet.data : { subjects: [], schedule: [], exams: [], grades: [], holidays: [] };
+      const base = { subjects: [], schedule: [], exams: [], grades: [], holidays: [] };
       const schedule = [...base.schedule, ...(p.airtable ? p.airtable.data.schedule : []), ...manualSchedule()];
       const exams = [...base.exams];
       let calendarInfo = null;
@@ -801,7 +797,7 @@
 
   // ---------- data sources dialog ----------
   // drafts keep what the student typed while the dialog is re-rendered
-  const drafts = { url: { calendar: '', grades: '', sheet: '', airtable: '' }, token: '', gid: {}, tabs: {}, msg: {}, importMsg: '' };
+  const drafts = { url: { calendar: '', grades: '', airtable: '' }, token: '', gid: {}, tabs: {}, msg: {}, importMsg: '' };
 
   function sourceSummary(kind) {
     const s = state.src[kind];
@@ -814,8 +810,7 @@
     } else if (kind === 'grades') {
       const n = p.data.grades.length;
       text = t(n === 1 ? 'gradesLoadedOne' : 'gradesLoaded', { n });
-    } else if (kind === 'airtable') text = t('airtableLoaded', { n: p.data.schedule.length });
-    else text = t('sheetLoaded', { l: p.data.schedule.length, e: p.data.exams.length, g: p.data.grades.length });
+    } else text = t('airtableLoaded', { n: p.data.schedule.length });
     const issues = p.issues.length
       ? `<div><b>${esc(t('issuesTitle', { n: p.issues.length }))}</b><ul class="issues">${p.issues
           .slice(0, 40)
@@ -871,8 +866,8 @@
 
   function sourceSection(kind) {
     const s = state.src[kind];
-    const title = { calendar: 'srcCalendarTitle', grades: 'srcGradesTitle', sheet: 'srcSheetTitle', airtable: 'srcAirtableTitle' }[kind];
-    const help = { calendar: 'srcCalendarHelp', grades: 'srcGradesHelp', sheet: 'srcSheetHelp', airtable: 'srcAirtableHelp' }[kind];
+    const title = { calendar: 'srcCalendarTitle', grades: 'srcGradesTitle', airtable: 'srcAirtableTitle' }[kind];
+    const help = { calendar: 'srcCalendarHelp', grades: 'srcGradesHelp', airtable: 'srcAirtableHelp' }[kind];
     const tabs = drafts.tabs[kind] || [];
     const chosen = drafts.gid[kind] || (s && s.gid) || '';
     const tabPicker = tabs.length
@@ -884,7 +879,7 @@
     return `<section class="src" data-kind="${kind}">
       <h3>${esc(t(title))}</h3>
       <p class="note">${esc(t(help))}</p>
-      ${kind === 'sheet' || kind === 'grades' ? `<div class="warn-box">${esc(t('publicWarn'))}</div>` : ''}
+      ${kind === 'grades' ? `<div class="warn-box">${esc(t('publicWarn'))}</div>` : ''}
       <div class="field"><input data-url="${kind}" dir="ltr" placeholder="${esc(t(kind === 'airtable' ? 'airtableLinkPlaceholder' : 'linkPlaceholder'))}" value="${esc(value)}" aria-label="${esc(t(title))}"></div>
       ${kind === 'airtable' ? `<div class="field"><input data-token type="password" dir="ltr" autocomplete="off" placeholder="${esc(s ? t('airtableTokenSaved') : t('airtableToken'))}" value="${esc(drafts.token)}" aria-label="${esc(t('airtableToken'))}"></div>` : ''}
       ${tabPicker}
@@ -896,15 +891,11 @@
       </div></section>`;
   }
 
-  // the personal sheet is no longer offered (the timetable comes from Airtable);
-  // it stays listed only while an older sheet is still connected, so it can be disconnected
-  const shownInSources = (kind) => kind !== 'sheet' || !!state.src.sheet;
-
   function openSources() {
     const dlg = $('#dlgSheet');
     dlg.innerHTML = `<div class="dlg-body"><h2>${esc(t('sources'))}</h2>
       ${HOSTED ? `<div class="warn-box">${esc(t('hostedNoSheets'))}</div>` : ''}
-      ${KINDS.filter(shownInSources).map(sourceSection).join('')}
+      ${KINDS.map(sourceSection).join('')}
       <div class="actions"><button class="btn" data-action="closeDlg">${esc(t('close'))}</button></div></div>`;
     if (!dlg.open) dlg.showModal();
   }
@@ -918,7 +909,7 @@
     if (HOSTED) return;
     const link = SH.parseLink(drafts.url[kind]);
     drafts.tabs[kind] = [];
-    if (link && link.kind === 'published' && kind !== 'sheet') {
+    if (link && link.kind === 'published') {
       try {
         drafts.tabs[kind] = await SH.listPublishedTabs(link.id);
         drafts.gid[kind] = link.gid || (drafts.tabs[kind][0] && drafts.tabs[kind][0].gid) || '';
@@ -936,26 +927,17 @@
     if (!link) return setMsg(kind, errBox(t('badLink')));
     setMsg(kind, `<div class="note">${esc(t('connecting'))}</div>`);
     try {
-      let cache, cfg;
-      if (kind === 'sheet') {
-        const { tabs, missing } = await SH.loadSheet(link);
-        if (!Object.keys(tabs).length) return setMsg(kind, errBox(t('noTabsFound')));
-        cache = tabs;
-        cfg = { input, link };
-      } else {
-        const chosen = drafts.gid[kind] || link.gid || null;
-        const r = await SH.loadSingleTab(link, chosen);
-        if (!r.rows) throw new Error('no rows');
-        const probe = parseSource(kind, r.rows);
-        const count = kind === 'calendar' ? probe.data.exams.length : probe.data.grades.length;
-        if (probe.missingColumns || count === 0) return setMsg(kind, errBox(t(kind === 'calendar' ? 'nothingFound' : 'noGradesFound')));
-        cache = r.rows;
-        cfg = { input, link, gid: r.gid, tabName: r.tabName };
-      }
+      const chosen = drafts.gid[kind] || link.gid || null;
+      const r = await SH.loadSingleTab(link, chosen);
+      if (!r.rows) throw new Error('no rows');
+      const probe = parseSource(kind, r.rows);
+      const count = kind === 'calendar' ? probe.data.exams.length : probe.data.grades.length;
+      if (probe.missingColumns || count === 0) return setMsg(kind, errBox(t(kind === 'calendar' ? 'nothingFound' : 'noGradesFound')));
+      const cache = r.rows;
+      const cfg = { input, link, gid: r.gid, tabName: r.tabName };
       state.src[kind] = cfg;
       store.set(CFG[kind], cfg);
       store.set(CACHE[kind], cache);
-      store.del('sheetId');
       state.parsed[kind] = parseSource(kind, cache);
       state.errors[kind] = false;
       state.lastSync = Date.now();
@@ -1004,7 +986,6 @@
     state.parsed[kind] = null;
     state.errors[kind] = false;
     [CFG[kind], CACHE[kind]].forEach((k) => store.del(k));
-    if (kind === 'sheet') store.del('sheetId');
     drafts.url[kind] = '';
     if (kind === 'airtable') drafts.token = '';
     drafts.tabs[kind] = [];
@@ -1026,11 +1007,7 @@
     try {
       let cache;
       if (kind === 'airtable') cache = await SH.loadAirtable(s.link, s.token);
-      else if (kind === 'sheet') {
-        const { tabs, missing } = await SH.loadSheet(s.link);
-        if (!Object.keys(tabs).length) throw new Error('missing');
-        cache = tabs;
-      } else {
+      else {
         const r = await SH.loadSingleTab(s.link, s.gid);
         if (!r.rows) throw new Error('no rows');
         cache = r.rows;
