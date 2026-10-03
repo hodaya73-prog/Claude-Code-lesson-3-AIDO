@@ -91,6 +91,27 @@ The **+** button opens a menu:
 Hand-entered data is saved on this device only and is merged with any connected sheets. As soon as something is entered
 by hand, the built-in sample data is no longer shown.
 
+## Study videos screen (Apify)
+
+The **🎬 סרטוני לימוד / Study videos** chip in the header opens a second screen (`#videos`; the chip becomes
+**🏠 Dashboard** to go back). It uses [Apify](https://www.apify.com) to find the most-watched YouTube explanations for
+the subject of your next test:
+
+1. Create a free Apify account, open **Settings → API & Integrations** and copy the personal API token.
+2. Paste it on the screen and press **Save token**. It is stored only in this browser and sent only to `api.apify.com`.
+3. Pick a subject (the next test's subject is preselected ★), optionally add a topic, press **Find videos**.
+
+Behind the button the page calls the public actor [`streamers/youtube-scraper`](https://apify.com/streamers/youtube-scraper)
+through `run-sync-get-dataset-items` with `{ searchQueries: ["<subject> <topic> <lesson explained>"], maxResults: 8 }`,
+drops duplicates and non-`https` links, sorts by views, and shows thumbnail, channel, length, date and view count plus
+three totals. Results are cached on the device per query (last 12), so they stay visible offline; a search only runs when
+the button is pressed because each run uses a little of the student's Apify credit. **Show demo videos** displays four
+clearly-marked example rows with no token. Errors are explained (token rejected, no credit, timeout).
+Not available in the hosted Artifact preview (network blocked). Logic lives in `js/apify.js`; tests are in `tests.html`.
+
+> Tested with mocked Apify responses (request shape, parsing, errors); the live Apify call was **not** tested with a
+> real account. The CORS preflight of `api.apify.com` was checked and allows the `Authorization` header from any origin.
+
 ## Not built yet
 
 Calendar, Exams, Grades and Settings pages, exam-calendar filtering by class/track, bagrut tracker, push/email notifications, simple mode, real Google
@@ -103,6 +124,7 @@ sign-in. See the roadmap in SPEC §12.
 | `index.html`, `css/styles.css` | Page and dark theme (design tokens from SPEC §6) |
 | `js/logic.js` | Pure logic: readiness, countdown, cluster, grades, mission, streak (SPEC §9) |
 | `js/sheets.js` | CSV parsing, validation, Google Sheet reading (SPEC §8.1, §9.7) |
+| `js/apify.js` | Study videos screen: Apify YouTube search, parsing, formatting |
 | `js/sample.js` | Sample data relative to today |
 | `js/i18n.js` | Hebrew/English strings |
 | `js/app.js` | Rendering and events |

@@ -8,9 +8,9 @@ function Read($p) { [System.IO.File]::ReadAllText((Join-Path $root $p), $utf8) }
 $index = Read 'index.html'
 $body = [regex]::Match($index, '(?s)<body>(.*?)<script src="js/logic\.js">').Groups[1].Value
 $css = Read 'css/styles.css'
-$scripts = ('logic', 'sheets', 'sample', 'i18n', 'app') | ForEach-Object { "<script>`n" + (Read "js/$_.js") + "`n</script>" }
+$scripts = ('logic', 'sheets', 'apify', 'sample', 'i18n', 'app') | ForEach-Object { "<script>`n" + (Read "js/$_.js") + "`n</script>" }
 if ($scripts -match '</script>.*</script>') { }  # scripts must not contain a closing tag inside: checked below
-foreach ($s in ('logic', 'sheets', 'sample', 'i18n', 'app')) { if ((Read "js/$s.js") -match '</script') { throw "js/$s.js contains </script" } }
+foreach ($s in ('logic', 'sheets', 'apify', 'sample', 'i18n', 'app')) { if ((Read "js/$s.js") -match '</script') { throw "js/$s.js contains </script" } }
 
 $html = @"
 <title>StudyPlanner</title>

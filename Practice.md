@@ -46,7 +46,7 @@ git log --oneline | head -1
 
 ## 4. לפני שמעלים — בדיקות
 
-1. **בדיקות אוטומטיות:** מפעילים את השרת המקומי ופותחים `tests.html`; חייבת להופיע כותרת `PASSED <מספר>` (כרגע 119 בדיקות).
+1. **בדיקות אוטומטיות:** מפעילים את השרת המקומי ופותחים `tests.html`; חייבת להופיע כותרת `PASSED <מספר>` (כרגע 133 בדיקות).
    ```powershell
    powershell -NoProfile -ExecutionPolicy Bypass -File tools/serve.ps1
    # ואז פותחים http://localhost:5173/tests.html

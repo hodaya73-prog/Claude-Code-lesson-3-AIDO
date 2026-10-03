@@ -61,6 +61,12 @@
     manualLessons: store.get('manualLessons', []), // { id, weekday 1-7, start, end, subject, room }
     settings: { dailyCapMin: 180, weeklyGoalMin: 300, weakThreshold: 70, showHebrewDate: true },
     bannerCollapsed: false,
+    view: location.hash === '#videos' ? 'videos' : 'dash', // the second screen is reached through #videos
+    apify: {
+      token: store.get('apifyToken', ''), // the student's Apify API token — stays on this device only
+      cache: store.get('apifyVideos', {}), // query → { at, query, subject, videos }
+      subject: null, topic: '', demo: false, busy: false, msg: '', // what is on screen right now (not saved)
+    },
     rev: 0,
     memo: null,
   };
@@ -257,6 +263,7 @@
       <div class="logo"><i aria-hidden="true">✦</i>${esc(t('appName'))}</div>
       ${avg}
       ${status}
+      <button class="chip" data-action="view" data-view="${state.view === 'videos' ? 'dash' : 'videos'}">${state.view === 'videos' ? '🏠 ' + esc(t('navDash')) : '🎬 ' + esc(t('navVideos'))}</button>
       <button class="chip" data-action="sources">📄 ${esc(t('sources'))}</button>
       <button class="chip" data-action="lang" lang="${state.lang === 'he' ? 'en' : 'he'}">${esc(t('language'))}</button>`;
   }
@@ -446,12 +453,148 @@
   function render() {
     document.documentElement.lang = state.lang;
     document.documentElement.dir = state.lang === 'he' ? 'rtl' : 'ltr';
+    const videos = state.view === 'videos';
+    $('.grid').hidden = videos;
+    $('#banner').hidden = videos;
+    $('#videos').hidden = !videos;
+    $('#fab').hidden = videos;
     renderStatic();
     renderTop();
+    if (videos) return renderVideos(false);
     renderBanner();
     renderHero();
     renderSchedule();
     renderMission();
+  }
+
+  // ---------- second screen: study videos found through Apify ----------
+  const AP = SP.apify;
+  const apifyDraft = { token: '' }; // typed but not yet saved
+  const VIDEO_CACHE_MAX = 12;
+
+  // the picker offers the student's subjects; the next test's subject is preselected
+  function videoTarget() {
+    const a = state.apify;
+    const next = L.upcoming(allExams(), now())[0];
+    const names = data().subjects.map((s) => s.name);
+    if (next && !names.includes(next.subject)) names.unshift(next.subject);
+    const subject = a.subject || (next && next.subject) || names[0] || '';
+    return { names, subject, next: next ? next.subject : null, query: AP.buildQuery(subject, a.topic, state.lang) };
+  }
+
+  function videoCard(v, demo) {
+    const when = v.date && isFinite(L.parseYmd(v.date)) ? new Intl.DateTimeFormat(locale(), { year: 'numeric', month: 'short' }).format(L.parseYmd(v.date)) : '';
+    const meta = [v.channel, v.duration, when].filter(Boolean).map((x) => `<bdi>${esc(x)}</bdi>`).join(' · ');
+    const title = v.url ? `<a href="${esc(v.url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(t('vWatch') + ': ' + v.title)}"><bdi>${esc(v.title)}</bdi></a>` : `<bdi>${esc(v.title)}</bdi>`;
+    const thumb = v.thumb ? `<img src="${esc(v.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<span aria-hidden="true">▶</span>';
+    return `<li class="vcard${demo ? ' demo' : ''}"><div class="vthumb">${thumb}</div>
+      <div class="vbody"><div class="vtitle">${title}</div><div class="note">${meta}</div></div>
+      <span class="tag">${esc(t('vViews', { n: AP.formatCount(v.views, state.lang) }))}</span></li>`;
+  }
+
+  // force=false is the 30-second refresh: it must not wipe a token or topic the student is typing
+  function renderVideos(force) {
+    const el = $('#videos');
+    if (!force && el.contains(document.activeElement)) return;
+    const a = state.apify;
+    const { names, subject, next, query } = videoTarget();
+    const cached = a.cache[query];
+    const shown = a.demo ? AP.demoVideos(subject, state.lang) : cached ? cached.videos : null;
+    const setup = a.token
+      ? ''
+      : `<section class="src"><h3>${esc(t('vTokenTitle'))}</h3><p class="note">${esc(t('vTokenHelp'))}</p>
+          <div class="field"><input data-apify-token type="password" dir="ltr" autocomplete="off" placeholder="${esc(t('vToken'))}" value="${esc(apifyDraft.token)}" aria-label="${esc(t('vToken'))}"></div>
+          <div class="actions"><button class="btn" data-action="apifyDemo">${esc(t('vDemo'))}</button>
+            <button class="btn btn-primary" data-action="apifySave">${esc(t('vTokenSave'))}</button></div></section>`;
+    const controls = a.token
+      ? `<div class="row vform">
+          <div class="field"><label for="vSubject">${esc(t('vSubject'))}</label>
+            <select id="vSubject" data-vsubject${a.busy ? ' disabled' : ''}>${names.map((n) => `<option value="${esc(n)}"${n === subject ? ' selected' : ''}>${esc(n)}${n === next ? ' ★' : ''}</option>`).join('')}</select></div>
+          <div class="field"><label for="vTopic">${esc(t('vTopic'))}</label>
+            <input id="vTopic" data-vtopic maxlength="60" autocomplete="off" placeholder="${esc(t('vTopicPh'))}" value="${esc(a.topic)}"${a.busy ? ' disabled' : ''}></div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" data-action="vSearch"${a.busy ? ' disabled' : ''}>🔎 ${esc(cached ? t('vRefresh') : t('vSearch'))}</button></div>`
+      : '';
+    let results = '';
+    if (shown && shown.length) {
+      const sum = AP.summarize(shown);
+      results = `${a.demo ? `<div class="warn-box">${esc(t('vDemoTag'))}</div>` : ''}
+        <div class="stats">
+          <div class="stat"><b>${sum.count}</b><span>${esc(t('vStatVideos'))}</span></div>
+          <div class="stat"><b>${esc(AP.formatCount(sum.topViews, state.lang))}</b><span>${esc(t('vStatTop'))}</span></div>
+          <div class="stat"><b>${esc(AP.formatCount(sum.totalViews, state.lang))}</b><span>${esc(t('vStatTotal'))}</span></div>
+        </div>
+        <ul class="vlist">${shown.map((v) => videoCard(v, a.demo)).join('')}</ul>
+        ${!a.demo && cached ? `<p class="note">${esc(t('vUpdated', { t: relTime(cached.at), q: cached.query }))}</p>` : ''}`;
+    }
+    el.innerHTML = `<div class="card vscreen">
+      <div class="card-title"><span>🎬 ${esc(t('vTitle'))}</span>${next ? `<span class="tag">${esc(t('vNextTest', { s: next }))}</span>` : ''}</div>
+      <p class="note">${esc(t('vSub'))}</p>
+      ${setup}${controls}
+      <div id="vMsg" aria-live="polite">${a.msg}</div>
+      ${results}
+      ${a.token ? `<p class="note">${esc(t('vCost'))}</p><div class="actions"><button class="btn btn-danger" data-action="apifyRemove">${esc(t('vDisconnect'))}</button></div>` : ''}
+    </div>`;
+  }
+
+  async function runVideoSearch() {
+    const a = state.apify;
+    if (a.busy) return;
+    const { subject, query } = videoTarget();
+    a.demo = false;
+    if (HOSTED) a.msg = errBox(t('vHosted'));
+    else if (!a.token) a.msg = errBox(t('vNoToken'));
+    if (HOSTED || !a.token) return renderVideos(true);
+    a.busy = true;
+    a.msg = `<div class="note">${esc(t('vSearching'))}</div>`;
+    renderVideos(true);
+    try {
+      const videos = await AP.searchVideos(a.token, query);
+      if (videos.length) {
+        a.cache[query] = { at: Date.now(), query, subject, videos };
+        const keep = Object.entries(a.cache).sort((x, y) => y[1].at - x[1].at).slice(0, VIDEO_CACHE_MAX);
+        a.cache = Object.fromEntries(keep);
+        store.set('apifyVideos', a.cache);
+        a.msg = '';
+      } else a.msg = errBox(t('vEmpty'));
+    } catch (e) {
+      const key = e.status === 401 || e.status === 403 ? 'vBadToken' : e.status === 402 ? 'vNoCredit' : e.status === 408 ? 'vTimeout' : 'vFail';
+      a.msg = errBox(t(key));
+    }
+    a.busy = false;
+    renderVideos(true);
+  }
+
+  function saveApifyToken() {
+    const a = state.apify;
+    if (!apifyDraft.token) {
+      a.msg = errBox(t('vNoToken'));
+      return renderVideos(true);
+    }
+    a.token = apifyDraft.token;
+    apifyDraft.token = '';
+    store.set('apifyToken', a.token);
+    a.demo = false;
+    a.msg = '';
+    renderVideos(true);
+    toast(t('vSaved'));
+  }
+
+  function removeApifyToken() {
+    const a = state.apify;
+    a.token = '';
+    a.cache = {};
+    a.msg = '';
+    store.del('apifyToken');
+    store.del('apifyVideos');
+    renderVideos(true);
+  }
+
+  function setView(view) {
+    if (state.view === view) return;
+    state.view = view;
+    render();
+    window.scrollTo(0, 0);
   }
 
   // ---------- toast ----------
@@ -1041,7 +1184,15 @@
       bump();
       render();
     } else if (a === 'grades') openGrades();
-    else if (a === 'sources') openSources();
+    else if (a === 'view') location.hash = el.dataset.view === 'videos' ? 'videos' : 'dash';
+    else if (a === 'vSearch') runVideoSearch();
+    else if (a === 'apifySave') saveApifyToken();
+    else if (a === 'apifyRemove') removeApifyToken();
+    else if (a === 'apifyDemo') {
+      state.apify.demo = true;
+      state.apify.msg = '';
+      renderVideos(true);
+    } else if (a === 'sources') openSources();
     else if (a === 'refresh') sync().then(() => toast(anyError() ? t('syncError') : t('updated', { t: t('justNow') })));
     else if (a === 'banner') {
       state.bannerCollapsed = !state.bannerCollapsed;
@@ -1102,6 +1253,12 @@
       drafts.url[url.dataset.url] = url.value.trim();
       return loadTabsFor(url.dataset.url);
     }
+    if (ev.target.matches('[data-vsubject]')) {
+      state.apify.subject = ev.target.value;
+      state.apify.demo = false;
+      state.apify.msg = '';
+      return renderVideos(true);
+    }
     const calmode = ev.target.closest('[data-calmode]');
     if (calmode) return setCalFilter(calmode.dataset.calmode);
     const calsubj = ev.target.closest('[data-calsubj]');
@@ -1114,8 +1271,25 @@
     const url = ev.target.closest('[data-url]');
     if (url) drafts.url[url.dataset.url] = url.value.trim();
     if (ev.target.matches('[data-token]')) drafts.token = ev.target.value.trim();
+    if (ev.target.matches('[data-apify-token]')) apifyDraft.token = ev.target.value.trim();
+    if (ev.target.matches('[data-vtopic]')) state.apify.topic = ev.target.value.trim();
+  });
+  window.addEventListener('hashchange', () => {
+    // other links (e.g. "skip to content") also change the hash and must not switch screens
+    if (location.hash === '#videos') setView('videos');
+    else if (location.hash === '#dash') setView('dash');
   });
   document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter' && ev.target.matches) {
+      if (ev.target.matches('[data-apify-token]')) {
+        ev.preventDefault();
+        return saveApifyToken();
+      }
+      if (ev.target.matches('[data-vtopic]')) {
+        ev.preventDefault();
+        return runVideoSearch();
+      }
+    }
     if (ev.target.matches && ev.target.matches('[data-token]') && ev.key === 'Enter') {
       ev.preventDefault();
       return connectSource('airtable');
