@@ -44,7 +44,7 @@ merged, refreshed every 15 minutes and cached, so one failing source never hides
 | **Personal sheet** | Timetable, tests and grades (tabs `Schedule`, `Exams`, `Grades`, optional `Subjects`, `Holidays`; see [`template/`](template)). **Any one of Schedule / Exams / Grades is enough**, so a sheet with only a `Schedule` tab works. Times may be `08:45` or Google-formatted `8:45:00 AM` | Same |
 | **Timetable from Airtable** | Timetable only — an Airtable table with the `Schedule` columns (`weekday, period, start, end, subject, room, teacher, type, date, validFrom, validTo`) | The table address from the browser (`https://airtable.com/app…/tbl…`) plus a personal access token with `data.records:read` on that base |
 
-**Timetable from Airtable.** The token is saved only in this browser (never in the code or the repo) and is sent only
+**Timetable from Airtable.** The address of the school's `Schedule` table is built in (`DEFAULT_AIRTABLE` in `js/app.js`) and pre-filled, so a student only pastes the token, once per device. The token is saved only in this browser (never in the code or the repo) and is sent only
 to `api.airtable.com`. Create it at airtable.com/create/tokens with the `data.records:read` scope and access to the one
 base. A token looks like `patXXXXXXXXXXXXXX.<long secret>` — paste the whole thing, including the part after the dot.
 

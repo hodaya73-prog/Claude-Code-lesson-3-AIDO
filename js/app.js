@@ -33,6 +33,8 @@
   // The hosted (Artifact) build sets window.SP_HOSTED: network requests are blocked there, so sheets cannot be read.
   const HOSTED = !!window.SP_HOSTED;
   const KINDS = ['calendar', 'grades', 'airtable'];
+  // The school's timetable table: its address is not secret, so it is built in and the student only pastes the access token once.
+  const DEFAULT_AIRTABLE = 'https://airtable.com/appmsE2WLIFOSvh82/tbl16HAawVOQMPjGC';
   // storage keys per source: link config + cached raw rows/tabs (so data stays visible offline, SPEC §11)
   // the Airtable config also holds the student's access token — it stays on this device only
   const CFG = { calendar: 'calendar', grades: 'gradesSrc', airtable: 'airtableSrc' };
@@ -1018,7 +1020,7 @@
           .map((x) => `<option value="${esc(x.gid)}"${String(x.gid) === String(chosen) ? ' selected' : ''}>${esc(x.name)}</option>`)
           .join('')}</select></div>`
       : '';
-    const value = drafts.url[kind] !== '' ? drafts.url[kind] : s ? s.input : '';
+    const value = drafts.url[kind] !== '' ? drafts.url[kind] : s ? s.input : kind === 'airtable' ? DEFAULT_AIRTABLE : '';
     return `<section class="src" data-kind="${kind}">
       <h3>${esc(t(title))}</h3>
       <p class="note">${esc(t(help))}</p>
@@ -1064,7 +1066,7 @@
 
   async function connectSource(kind) {
     if (HOSTED) return setMsg(kind, errBox(t('hostedNoSheets')));
-    const input = (drafts.url[kind] || (state.src[kind] && state.src[kind].input) || '').trim();
+    const input = (drafts.url[kind] || (state.src[kind] && state.src[kind].input) || (kind === 'airtable' ? DEFAULT_AIRTABLE : '')).trim();
     if (kind === 'airtable') return connectAirtable(input);
     const link = SH.parseLink(input);
     if (!link) return setMsg(kind, errBox(t('badLink')));
