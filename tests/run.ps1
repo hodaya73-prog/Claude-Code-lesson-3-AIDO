@@ -35,12 +35,12 @@ Write-Host "browser: $browser"
 
 # static server in the background (a job, so it is stopped even when something below throws)
 $serve = Join-Path $root 'tools/serve.ps1'
-$isWindows = $env:OS -eq 'Windows_NT'
+$onWindows = $env:OS -eq 'Windows_NT'   # not $isWindows: that is a read-only automatic variable in pwsh on Linux/macOS
 $psExe = (Get-Process -Id $PID).Path      # the PowerShell that is running this script (powershell.exe or pwsh)
 $serverArgs = @('-NoProfile', '-File', "`"$serve`"", '-Port', $Port)   # quoted: the repo path may contain spaces
-if ($isWindows) { $serverArgs = @('-ExecutionPolicy', 'Bypass') + $serverArgs }
+if ($onWindows) { $serverArgs = @('-ExecutionPolicy', 'Bypass') + $serverArgs }
 $serverStart = @{ FilePath = $psExe; ArgumentList = $serverArgs; PassThru = $true }
-if ($isWindows) { $serverStart.WindowStyle = 'Hidden' }
+if ($onWindows) { $serverStart.WindowStyle = 'Hidden' }
 # a separate process, not a job: the server sits in a blocking GetContext() call that Stop-Job cannot interrupt (it took ~2 minutes)
 $server = Start-Process @serverStart
 $failed = $false
