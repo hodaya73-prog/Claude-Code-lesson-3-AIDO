@@ -283,3 +283,33 @@ button.chip:hover { background: var(--surface-2); }
   .vcard .tag { margin-inline-start: auto; }
 }
 [hidden] { display: none !important; }
+
+/* ---------- tests list screen (SPEC 4.1.5) ---------- */
+.exams-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-block-end: 12px; }
+.exams-head h2 { font-size: 22px; font-weight: 800; margin-inline-end: auto; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-block-end: 10px; }
+.chip[aria-pressed='true'] { background: var(--primary); border-color: var(--primary); color: #0e1117; }
+.chip .n { font-variant-numeric: tabular-nums; opacity: 0.75; }
+.exams-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-block-end: 10px; }
+.sortlbl { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+.sortlbl select { min-height: 40px; padding: 4px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-2); }
+.exlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.exrow { display: grid; grid-template-columns: 6px 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface); border: 1px solid var(--border); }
+.exrow .bar { align-self: stretch; min-height: 40px; border-radius: 4px; }
+.exrow.done { opacity: 0.6; }
+.ex-title { font-weight: 700; }
+.ex-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 13px; color: var(--text-muted); }
+.ex-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.cdchip { font-size: 13px; font-weight: 700; white-space: nowrap; }
+.cdchip[data-level='urgent'] { color: var(--urgent); }
+.cdchip[data-level='soon'] { color: var(--warn); }
+.cdchip[data-level='far'] { color: var(--accent); }
+.badge.sm { font-size: 12px; padding: 2px 10px; }
+.ex-del { min-height: 32px; padding: 0 10px; }
+/* on a phone the countdown and readiness sit under the title, so the title keeps the full width */
+@media (max-width: 520px) {
+  .exrow { grid-template-columns: 6px 1fr; }
+  .exrow .bar { grid-row: 1 / span 2; }
+  .ex-side { grid-column: 2; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+  .ex-del { margin-inline-start: auto; }
+}

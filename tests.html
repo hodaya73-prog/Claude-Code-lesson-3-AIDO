@@ -253,6 +253,23 @@
     check('apify: demo videos have no links', A.demoVideos('Math', 'en').every((v) => v.url === ''), true);
     check('apify: compact view counts', A.formatCount(410458, 'en'), '410.5k');
 
+    // ---- exams screen filters (SPEC §4.1.5): "now" is Mon 21 Sep 2026 08:00, so the week is Sun 20 – Sat 26 Sep ----
+    const exList = [
+      mkExam('2026-09-10'), mkExam('2026-09-18'), mkExam('2026-09-22'), mkExam('2026-09-26'), mkExam('2026-09-27'),
+      mkExam('2026-09-30'), mkExam('2026-10-05'), mkExam('2026-10-10', { type: 'bagrut' }),
+    ];
+    const ids = (k, s) => L.examsFilter(exList, k, monday, s).map((e) => e.date.slice(5));
+    check('exams filter: all = upcoming, soonest first', ids('all'), ['09-22', '09-26', '09-27', '09-30', '10-05', '10-10']);
+    check('exams filter: this week = Sun–Sat (Saturday included, next Sunday not)', ids('week'), ['09-22', '09-26']);
+    check('exams filter: this month', ids('month'), ['09-22', '09-26', '09-27', '09-30']);
+    check('exams filter: bagrut', ids('bagrut'), ['10-10']);
+    check('exams filter: done = already passed, most recent first', ids('done'), ['09-18', '09-10']);
+    check('exams filter: unknown key behaves like all', ids('nope').length, 6);
+    check('exams filter: empty input', L.examsFilter([], 'all', monday).length, 0);
+    check('exams filter: does not mutate its input', exList.map((e) => e.date.slice(5)).slice(0, 2), ['09-10', '09-18']);
+    const subj = [mkExam('2026-09-22', { subject: 'ספרות' }), mkExam('2026-09-23', { subject: 'אנגלית' }), mkExam('2026-09-24', { subject: 'ספרות' })];
+    check('exams filter: sort by subject, then date', L.examsFilter(subj, 'all', monday, 'subject').map((e) => e.subject + e.date.slice(8)), ['אנגלית23', 'ספרות22', 'ספרות24']);
+
     // sample data is valid for both languages
     for (const lang of ['en', 'he']) {
       const d = SP.sample.build(new Date(), lang);
