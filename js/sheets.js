@@ -162,17 +162,29 @@
 
   // keyword (normalised) → display name. Order matters: first match wins.
   const SUBJECT_WORDS = [
-    ['חינוך תעבורתי', 'חינוך תעבורתי'], ['הנדסת תוכנה', 'הנדסת תוכנה'], ['מדעי המחשב', 'מדעי המחשב'], ['ביורפואה', 'ביורפואה'],
-    ['ביוטכנולוגיה', 'ביוטכנולוגיה'], ['חנג', 'חנ״ג'],
-    ['פסיכולוגיה', 'פסיכולוגיה'], ['פסיכולגיה', 'פסיכולוגיה'], // the second is a spelling variant found in the school's sheet ['פילוסופיה', 'פילוסופיה'], ['פילוספיה', 'פילוסופיה'],
+    // spelling variants (the second entry of a pair) are real ones found in the school's calendar
+    ['חינוך תעבורתי', 'חינוך תעבורתי'], ['ח.תעבורתי', 'חינוך תעבורתי'], ['הנדסת תוכנה', 'הנדסת תוכנה'], ['מדעי המחשב', 'מדעי המחשב'],
+    ['ביורפואה', 'ביורפואה'], ['ביוטכנולוגיה', 'ביוטכנולוגיה'], ['ביוטכנולגיה', 'ביוטכנולוגיה'], ['ביוטכנלוגיה', 'ביוטכנולוגיה'],
+    ['חנג', 'חנ״ג'],
+    ['פסיכולוגיה', 'פסיכולוגיה'], ['פסיכולגיה', 'פסיכולוגיה'],
+    ['פילוסופיה', 'פילוסופיה'], ['פילוספיה', 'פילוסופיה'],
     ['היסטוריה', 'היסטוריה'], ['אזרחות', 'אזרחות'], ['ספרות', 'ספרות'], ['אנגלית', 'אנגלית'], ['מתמטיקה', 'מתמטיקה'],
-    ['חדוא', 'חדו״א'], ['לשון', 'לשון'], ['תנך', 'תנ״ך'], ['ביולוגיה', 'ביולוגיה'], ['פיזיקה', 'פיזיקה'], ['כימיה', 'כימיה'],
+    ['חדוא', 'חדו״א'], ['לשון', 'לשון'], ['תנך', 'תנ״ך'], ['ביולוגיה', 'ביולוגיה'], ['ביולגיה', 'ביולוגיה'], ['פיזיקה', 'פיזיקה'], ['כימיה', 'כימיה'],
     ['עברית', 'עברית'], ['גוש א', 'גוש א׳'], ['גוש ב', 'גוש ב׳'],
   ];
   function canonicalSubject(text) {
     const n = norm(text);
     for (const [k, v] of SUBJECT_WORDS) if (n.includes(k)) return v;
     return null;
+  }
+  // For a subject the vocabulary does not know ("מתכונת משפטים", "בגרות חינוך גופני (כלל השכבה)"): drop the words that describe
+  // the exam rather than the subject, so it matches the same subject elsewhere (timetable, grades) and is not named "בגרות משפטים".
+  const EXAM_WORD = /(^|\s)(בגרות|מתכונת|מבחן|בוחן|מסכם|מעבדה|פנימית|מועד|נוסף|ב['׳]?)(?=\s|$)/g;
+  function cleanSubject(text) {
+    let s = String(text).replace(/\([^)]*\)/g, ' ').replace(/[-–—.,/]/g, ' ').replace(/\d+/g, ' ');
+    for (let i = 0; i < 3; i++) s = s.replace(EXAM_WORD, '$1'); // repeated: removing one word can expose the next
+    s = s.replace(/\s+/g, ' ').trim();
+    return s || String(text).trim();
   }
   // Tracks (מגמות) are grouped into two exam blocks: block ב׳ = software engineering, biomedicine,
   // biotechnology and computer science; every other track is block א׳ (rule given by the product owner).
@@ -300,10 +312,12 @@
     const n = norm(text);
     const moedB = /מועד ב|מועד נוסף/.test(n);
     if (n.includes('בגרות')) return { type: 'bagrut', weight: 5, difficulty: 4, moed: moedB ? 'B' : 'A' };
-    if (n.includes('מתכונת')) return { type: 'exam', weight: 4, difficulty: 4 };
-    if (n.includes('בוחן')) return { type: 'quiz', weight: 2, difficulty: 2 };
-    if (n.includes('מעבדה')) return { type: 'project', weight: 2, difficulty: 3 };
-    return { type: 'test', weight: 3, difficulty: 3 };
+    // a second sitting (מועד ב' / מועד נוסף) is recognised for every kind of exam; only a bagrut states its first sitting (A)
+    const moed = moedB ? 'B' : null;
+    if (n.includes('מתכונת')) return { type: 'exam', weight: 4, difficulty: 4, moed };
+    if (n.includes('בוחן')) return { type: 'quiz', weight: 2, difficulty: 2, moed };
+    if (n.includes('מעבדה')) return { type: 'project', weight: 2, difficulty: 3, moed };
+    return { type: 'test', weight: 3, difficulty: 3, moed };
   }
 
   function parseExamCalendar(rows) {
@@ -316,7 +330,7 @@
       if (!date) continue; // title rows, "מחצית א", blank rows
       const raw = r.title.replace(GRADE_PREFIX, '').trim();
       if (!raw) continue;
-      const subject = canonicalSubject(raw) || raw;
+      const subject = canonicalSubject(raw) || cleanSubject(raw);
       const kind = examKind(raw);
       const startsAt = L.parseYmd(date);
       startsAt.setHours(8, 0, 0, 0); // the calendar gives no time of day

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <title>StudyPlanner tests</title>
+  <style>
+    body { font: 15px/1.5 system-ui, sans-serif; background: #0e1117; color: #e8ecf4; padding: 24px; }
+    .ok { color: #3ddc97; } .fail { color: #ff6b7a; font-weight: 700; }
+    h1 { font-size: 20px; } li { margin: 2px 0; }
+  </style>
+</head>
+<body>
+  <h1>StudyPlanner — tests</h1>
+  <p>Run from the repo root with <code>tests/run.ps1</code>, or serve the folder and open this page. The tab title becomes
+     <code>PASSED &lt;n&gt;</code> when everything passes.</p>
+  <ul id="out"></ul>
+  <p id="summary">Running…</p>
+
+  <!-- the code under test (same order as index.html) -->
+  <script src="../js/logic.js"></script>
+  <script src="../js/sheets.js"></script>
+  <script src="../js/apify.js"></script>
+  <script src="../js/sample.js"></script>
+  <script src="../js/i18n.js"></script>
+
+  <script src="harness.js"></script>
+  <!-- test files share one global scope, in this order (logic.test.js defines helpers the later files reuse) -->
+  <script src="logic.test.js"></script>
+  <script src="sheets.test.js"></script>
+  <script src="apify.test.js"></script>
+  <script src="sample.test.js"></script>
+  <script src="i18n.test.js"></script>
+  <script src="design.test.js"></script>
+  <script>finish();</script>
+</body>
+</html>

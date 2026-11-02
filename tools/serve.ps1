@@ -20,6 +20,8 @@ while ($listener.IsListening) {
     $path = [Uri]::UnescapeDataString($ctx.Request.Url.AbsolutePath.TrimStart('/'))
     if ([string]::IsNullOrEmpty($path)) { $path = 'index.html' }
     $file = [System.IO.Path]::GetFullPath((Join-Path $root $path))
+    # a folder serves its index.html, like GitHub Pages does (/tests/ -> tests/index.html)
+    if (Test-Path $file -PathType Container) { $file = Join-Path $file 'index.html' }
     # never serve anything outside the project folder
     if ($file.StartsWith($root) -and (Test-Path $file -PathType Leaf)) {
       $ext = [System.IO.Path]::GetExtension($file).ToLower()

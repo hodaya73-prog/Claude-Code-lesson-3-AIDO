@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <title>StudyPlanner evals</title>
+  <style>
+    body { font: 15px/1.5 system-ui, sans-serif; background: #0e1117; color: #e8ecf4; padding: 24px; }
+    .ok { color: #3ddc97; } .fail { color: #ff6b7a; font-weight: 700; } .info { color: #9aa5bc; white-space: pre-wrap; }
+    h1 { font-size: 20px; } li { margin: 4px 0; list-style: none; }
+  </style>
+</head>
+<body>
+  <h1>StudyPlanner — evals</h1>
+  <p>Quality scores for the fuzzy parts, measured on labelled real data (see <code>evals/README.md</code>). The tab title
+     becomes <code>EVALS PASSED &lt;n&gt;</code> when every score is at or above its floor.</p>
+  <ul id="out"></ul>
+  <p id="summary">Running…</p>
+
+  <script src="../js/logic.js"></script>
+  <script src="../js/sheets.js"></script>
+  <script src="../tests/harness.js"></script>
+  <script src="calendar.eval.js"></script>
+  <script>
+    later(runCalendarEval().catch((e) => check('eval calendar-parsing ran: ' + e, false, true)));
+    finish('EVALS');
+  </script>
+</body>
+</html>
