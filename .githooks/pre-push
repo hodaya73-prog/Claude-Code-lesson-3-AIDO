@@ -1,0 +1,13 @@
+#!/bin/sh
+# Blocks a push when the tests or evals fail. Turn it on once per clone:   git config core.hooksPath .githooks
+# The same check runs in CI, so skipping this hook only moves the failure to GitHub.
+echo "pre-push: running the tests and evals (about 20 seconds)..."
+if command -v pwsh >/dev/null 2>&1; then
+  pwsh -NoProfile -File tests/run.ps1
+else
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run.ps1
+fi
+if [ $? -ne 0 ]; then
+  echo "pre-push: the tests or evals failed - push blocked. Fix them first (bypassing with --no-verify needs the owner's approval)."
+  exit 1
+fi

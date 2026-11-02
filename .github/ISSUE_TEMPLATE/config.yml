@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: How we work
+    url: https://github.com/hodaya73-prog/Claude-Code-lesson-3-AIDO/blob/master/Practice.md
+    about: Branches, pull requests, labels and the test gate.

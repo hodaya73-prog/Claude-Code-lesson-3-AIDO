@@ -9,7 +9,7 @@ algorithms (§9).
 
 ## Live site
 
-The site is published with GitHub Pages: **https://asafkakun.github.io/Claude-Code-lesson-3-AIDO/** — every `git push` to `master` updates it within about a minute. Google Sheet sources work there too (checked with the school's real published calendar).
+The site is published with GitHub Pages: **https://hodaya73-prog.github.io/Claude-Code-lesson-3-AIDO/** — every `git push` to `master` updates it within about a minute. Google Sheet sources work there too (checked with the school's real published calendar).
 
 ## Run it
 
@@ -19,8 +19,13 @@ Needs nothing but Windows PowerShell:
 powershell -NoProfile -ExecutionPolicy Bypass -File tools/serve.ps1
 ```
 
-Then open <http://localhost:5173>. Open <http://localhost:5173/tests.html> to run the logic tests (they check the
-worked examples from SPEC §9).
+Then open <http://localhost:5173>. To check that nothing broke, run all tests and evals in one command (about 20 seconds, needs Chrome or Edge):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/run.ps1
+```
+
+Or open <http://localhost:5173/tests/> and <http://localhost:5173/evals/> yourself. The tests check, among other things, the worked examples from SPEC §9.
 
 ## What works
 
@@ -108,7 +113,7 @@ drops duplicates and non-`https` links, sorts by views, and shows thumbnail, cha
 three totals. Results are cached on the device per query (last 12), so they stay visible offline; a search only runs when
 the button is pressed because each run uses a little of the student's Apify credit. **Show demo videos** displays four
 clearly-marked example rows with no token. Errors are explained (token rejected, no credit, timeout).
-Not available in the hosted Artifact preview (network blocked). Logic lives in `js/apify.js`; tests are in `tests.html`.
+Not available in the hosted Artifact preview (network blocked). Logic lives in `js/apify.js`; tests are in `tests/apify.test.js`.
 
 > Tested with mocked Apify responses (request shape, parsing, errors); the live Apify call was **not** tested with a
 > real account. The CORS preflight of `api.apify.com` was checked and allows the `Authorization` header from any origin.
@@ -129,17 +134,20 @@ sign-in. See the roadmap in SPEC §12.
 | `js/sample.js` | Sample data relative to today |
 | `js/i18n.js` | Hebrew/English strings |
 | `js/app.js` | Rendering and events |
-| `tests.html` | Browser-run tests |
+| `tests/` | Tests for the code, run in a headless browser ([`tests/README.md`](tests/README.md)) |
+| `evals/` | Quality scores on labelled real data ([`evals/README.md`](evals/README.md)) |
+| `.github/`, `.githooks/` | The test gate (CI + pre-push hook), issue and pull-request templates |
+| `SPEC.md`, `architecture.md`, `Practice.md`, `CLAUDE.md` | What we build, how and where, how we work, what the agent reads first |
 | `tools/serve.ps1` | Static dev server without Node/Python |
 
 ## Design notes (SPEC §6)
 
 - **Tokens:** all colours are CSS variables at the top of `css/styles.css`. `--border` is for decorative outlines (cards,
   dividers); `--border-strong` is for the boundary of controls (chips, buttons, form fields, day pickers).
-- **Contrast is tested:** `tests.html` reads the real tokens and checks WCAG AA — text 4.5:1 on every surface, the accent
+- **Contrast is tested:** `tests/design.test.js` reads the real tokens and checks WCAG AA — text 4.5:1 on every surface, the accent
   also as text, dark labels on the primary button, and 3:1 for control borders. Change a colour and the test tells you.
 - **Phone-first:** below 520 px the header is one swipeable row with a fade on the far edge (about 60 px instead of about
-  160 px), and `tests.html` loads the real page in a 375 px frame and fails if it scrolls sideways.
+  160 px), and `tests/design.test.js` loads the real page in a 375 px frame and fails if it scrolls sideways.
 - **Motion:** controls respond within 150–250 ms; the global `prefers-reduced-motion` rule turns all motion off.
 
 ## Hosted preview (Claude Artifact)
