@@ -1,0 +1,28 @@
+name: Feature or improvement
+description: Something the dashboard should do (or do better)
+labels: ["enhancement", "status: todo"]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: What and for whom
+      description: One sentence — "As a <student>, I want … so that …".
+    validations: { required: true }
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Done when
+      description: A checklist anyone can verify. Include Hebrew/RTL and phone width where it applies.
+      placeholder: "- [ ] …"
+    validations: { required: true }
+  - type: input
+    id: spec
+    attributes:
+      label: SPEC reference
+      description: The section or decision this comes from (for example §4.1.6, D14).
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority (SPEC priority key)
+      options: ["P0 — must be in v1", "P1 — should be in v1", "P2 — later"]
+    validations: { required: true }

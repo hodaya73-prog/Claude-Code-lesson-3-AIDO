@@ -1,0 +1,25 @@
+name: Bug
+description: Something behaves differently from the SPEC or from what you expect
+labels: ["bug", "status: todo"]
+body:
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Open … 2. Tap … 3. See …"
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual
+    validations: { required: true }
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: Browser, phone or desktop, language (Hebrew/English), data source in use.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: A screenshot, or the exact text that was parsed wrongly (no personal data).

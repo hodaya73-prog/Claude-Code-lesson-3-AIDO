@@ -1,120 +1,124 @@
-# Practice.md — הנחיות הפרויקט: שמירה ועדכון ב-GitHub
+# Practice.md — איך עובדים על הפרויקט
 
-מסמך זה מגדיר איך שומרים ומעדכנים את הפרויקט **StudyPlanner** (דשבורד ללימודים לתלמידים, עברית/אנגלית) ב-GitHub.
-כל אדם — וגם Claude Code — שעובד על הפרויקט פועל לפי הכללים כאן.
+כללי העבודה של **StudyPlanner** (דשבורד ללימודים לתלמידים, עברית/אנגלית). כל אדם — וגם Claude Code — שעובד על הפרויקט פועל לפי הכללים כאן.
+הקובץ הזה הוא חלק מ"הלולאה": [`SPEC.md`](SPEC.md) אומר *מה* בונים, [`architecture.md`](architecture.md) אומר *איך ואיפה*, והקובץ הזה אומר *איך עובדים*.
 
 ## 1. פרטי המאגר
 
 | נושא | ערך |
 |---|---|
-| מאגר (remote `origin`) | https://github.com/AsafKakun/Claude-Code-lesson-3-AIDO.git |
-| ענף עבודה | `master` (מוגדר כ-upstream של `origin/master`) |
-| תיקיית הפרויקט | `Claude Code lesson 3 AIDO` |
-| טכנולוגיה | HTML + CSS + JavaScript רגיל, בלי Node ובלי שלב build |
-| אתר חי (GitHub Pages) | https://asafkakun.github.io/Claude-Code-lesson-3-AIDO/ — המאגר ציבורי, ו-Pages מוגדר על `master` / שורש; האתר מתעדכן אוטומטית תוך כדקה אחרי כל `git push` |
-| תיעוד | [`README.md`](README.md) (הפעלה ושימוש), [`SPEC.md`](SPEC.md) (מפרט ויומן החלטות D1–D24) |
+| מאגר (`origin`) | https://github.com/hodaya73-prog/Claude-Code-lesson-3-AIDO.git |
+| ענף ראשי | `master` — **מוגן**: משנים אותו רק דרך Pull Request שבו הבדיקה `tests` ירוקה |
+| טכנולוגיה | HTML + CSS + JavaScript רגיל, בלי Node ובלי שלב build (החלטה D26) |
+| אתר חי | https://hodaya73-prog.github.io/Claude-Code-lesson-3-AIDO/ — מתעדכן אחרי מיזוג ל-`master` |
+| מסמכי הפרויקט | [`SPEC.md`](SPEC.md) (מפרט + יומן החלטות D1–D28), [`architecture.md`](architecture.md), [`README.md`](README.md), [`CLAUDE.md`](CLAUDE.md) (מה Claude קורא לפני שהוא כותב), [`tests/README.md`](tests/README.md), [`evals/README.md`](evals/README.md) |
 
-## 2. כלל הזהב: כל עדכון נשמר ונדחף
+## 2. כלל הזהב: שום דבר לא נכנס ל-`master` בלי שער
 
-**אחרי כל עדכון שהושלם ואומת — עושים commit ו-push מיד**, בלי לחכות ובלי לצבור כמה שינויים ל-commit אחד.
+**כל שינוי עובר: כרטיס (issue) ← ענף ← commits ← Pull Request ← בדיקות ירוקות ← מיזוג.**
+אין `git push` ישיר ל-`master` — GitHub דוחה אותו (ראו סעיף 8).
 
-- "עדכון" הוא כל שינוי בקוד, ב-`SPEC.md`, ב-`README.md`, בתבניות או בכלים.
-- עדכון נחשב "הושלם" רק אחרי שבדקתי אותו (ראו סעיף 4).
-- כך ההיסטוריה ב-GitHub שקופה: כל commit הוא צעד אחד שאפשר להבין ולחזור אליו.
-- הכלל שמור גם בזיכרון של Claude לפרויקט הזה, כך שהוא פועל אוטומטית.
-
-## 3. תהליך העבודה, צעד אחר צעד
+1. **כרטיס.** יש issue לכל עבודה (ראו סעיף 6). עבודה קטנה מאוד (שגיאת כתיב) יכולה להיות בלי כרטיס.
+2. **ענף** מ-`master` העדכני, בשם `סוג/נושא-קצר`:
+   `feature/` יכולת חדשה · `fix/` תיקון באג · `design/` עיצוב · `spec/` שלב מהמפרט · `chore/` תחזוקה, כלים, תיעוד.
+3. **commits קטנים** (סעיף 5) ו-`git push -u origin <ענף>`. ה-hook המקומי מריץ את הבדיקות לפני כל push.
+4. **Pull Request** לפי התבנית (`.github/pull_request_template.md`), עם `Closes #<מספר>` כדי שהכרטיס ייסגר לבד.
+5. **שער:** ה-job בשם `tests` ב-GitHub Actions חייב להיות ירוק. אדום = לא ממזגים; מתקנים ודוחפים שוב לאותו ענף.
+6. **מיזוג** ב-*Squash and merge* (commit אחד לכל PR, בשם ה-PR), ומחיקת הענף. אחרי המיזוג האתר החי מתעדכן תוך כדקה.
 
 ```bash
-# 1. בודקים מה השתנה
-git status --short
-
-# 2. מוסיפים את כל השינויים המכוונים
-git add -A
-
-# 3. שומרים (commit) עם הודעה ברורה
-git commit -m "הודעה קצרה באנגלית בלשון ציווי" -m "Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
-
-# 4. מעלים ל-GitHub
-git push
-
-# 5. מוודאים שהעלייה הצליחה
-git log --oneline | head -1
+git switch master && git pull
+git switch -c fix/calendar-second-sitting
+# ... עבודה, בדיקות, commits ...
+git push -u origin fix/calendar-second-sitting
+gh pr create --fill          # ממלא את התבנית; מוסיפים Closes #<מספר>
+gh pr checks --watch         # מחכים ל-tests ירוק
+gh pr merge --squash --delete-branch
 ```
 
-אחרי ה-push מדווחים את ה-hash של ה-commit (למשל `e9ca9da`).
+## 3. הכלים: מה מריץ מה
 
-## 4. לפני שמעלים — בדיקות
+| איפה | איך | מה זה עוצר |
+|---|---|---|
+| במחשב | `powershell -NoProfile -ExecutionPolicy Bypass -File tests/run.ps1` (כ-20 שניות) | אתכם, לפני ה-push |
+| `git push` | `.githooks/pre-push` — מפעילים **פעם אחת בכל שכפול**: `git config core.hooksPath .githooks` | push עם בדיקות כושלות |
+| GitHub | `.github/workflows/test.yml` על כל PR ועל כל מיזוג ל-`master` | מיזוג עם בדיקות כושלות |
 
-1. **בדיקות אוטומטיות:** מפעילים את השרת המקומי ופותחים `tests.html`; חייבת להופיע כותרת `PASSED <מספר>` (כרגע 160 בדיקות).
-   ```powershell
-   powershell -NoProfile -ExecutionPolicy Bypass -File tools/serve.ps1
-   # ואז פותחים http://localhost:5173/tests.html
-   ```
-2. **בדיקה בדפדפן:** פותחים `http://localhost:5173`, ובודקים את הפיצ'ר שהשתנה (גם בעברית/RTL וגם במסך של טלפון).
-3. **אם בדיקה נכשלת — לא דוחפים.** מתקנים קודם, או מדווחים במפורש על הכשל.
-4. **מקורות Google Sheets:** מה שנבדק רק מול תגובה מדומה נכתב במפורש כ"לא נבדק מול גיליון אמיתי" (ב-`README.md` ובדיווח).
+הסקריפט `tests/run.ps1` מפעיל בדפדפן Chrome/Edge ללא חלון את `tests/` (בדיקות קוד) ואת `evals/` (איכות הפענוח על נתונים אמיתיים) ומחזיר קוד יציאה 1 אם משהו נכשל.
+
+## 4. לפני שפותחים Pull Request — בדיקות
+
+1. **`tests/run.ps1` חייב לעבור** (בדיקות + evals). אם נכשל — מתקנים. לא עוקפים.
+2. **באג? קודם בדיקה שנכשלת**, רואים אותה נכשלת מהסיבה הנכונה, ורק אז מתקנים.
+3. **בדיקה ידנית בדפדפן** של מה שהשתנה: `http://localhost:5173` (מפעילים `tools/serve.ps1`), בעברית (RTL) ובמסך של טלפון.
+4. **טקסט חדש בממשק** נכתב בעברית **ובאנגלית** ב-`js/i18n.js` (`tests/i18n.test.js` נכשל אם אחת חסרה).
+5. **מקורות חיצוניים** (Google Sheets, Airtable, Apify): מה שנבדק רק מול תגובה מדומה נכתב במפורש כ"לא נבדק מול שירות אמיתי" ב-PR.
+6. **שינוי בפענוח לוח המבחנים?** מריצים את ה-eval ומעדכנים את הרצפה ב-`evals/calendar.eval.js` אם הציון השתפר (ראו `evals/README.md`).
 
 ## 5. הודעות commit
 
 - **שפה:** אנגלית. **צורה:** משפט קצר בלשון ציווי, עד כ-70 תווים, בלי נקודה בסוף.
 - **תוכן:** מה נוסף או תוקן ולא איך (`Add own tasks for today to Today's Mission`).
-- **סוף ההודעה:** שורת שיתוף הפעולה עם Claude:
-  `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`
+- **סוף ההודעה:** שורת שיתוף הפעולה עם Claude, כפי שהכלי מציין (`Co-Authored-By: Claude … <noreply@anthropic.com>`).
 - commit אחד = שינוי לוגי אחד.
 
-דוגמאות אמיתיות מההיסטוריה:
+## 6. הלוח: כרטיסים, תוויות ואבני דרך
 
-| Commit | הודעה |
-|---|---|
-| `9dc1313` | Add SPEC.md for student study-planner dashboard |
-| `dfe335d` | Build the dashboard prototype: exam-calendar and grades-sheet import |
-| `70cb193` | Add manual grade entry (no weight) and manual timetable |
-| `69bb451` | Add timetable file import (CSV) |
-| `e54e1f2` | Add own tasks for today to Today's Mission |
-| `90f2773` | Calendar filter: pick exam block (gush) from the student's track |
-| `e9ca9da` | Add hosted Artifact build (single-file, no-network mode) |
+אין לנו לוח Projects של GitHub (ההרשאה לא ניתנה); **הלוח הוא רשימת ה-Issues עם תוויות ואבני דרך** — אותו מידע, בלי הרשאה נוספת.
 
-## 6. מה נכנס ל-Git ומה לא
+- **אבן דרך (milestone)** = שלב מה-Roadmap ב-SPEC §12: `M0` תכנון, `M1` נתונים וליבה, `M2` תכנון וציונים, `M3` תזכורות, `M4` לוח שנה ואנליטיקה, `M5` בגרות וליטוש, `M6+` בהמשך.
+- **סטטוס** (תווית אחת בכל רגע): `status: todo` → `status: doing` → `status: review` (יש PR) → נסגר = בוצע. `status: blocked` כשמחכים למשהו, עם הסבר בכרטיס.
+- **עדיפות** (לפי מפתח העדיפויות ב-SPEC): `P0` חייב ב-v1 · `P1` כדאי ב-v1 · `P2` בהמשך.
+- **סוג:** `enhancement`, `bug`, `tech-debt`, `documentation`, `test`, `design`, `accessibility`.
+- **כרטיס טוב:** משפט אחד (מי, מה, למה), סעיף "מוכן כש…" עם רשימת סימון שאפשר לאמת, והפניה לסעיף ב-SPEC. התבניות ב-`.github/ISSUE_TEMPLATE/`.
+- **מי בוחר מה הלאה:** הכרטיס הפתוח עם העדיפות הגבוהה ביותר באבן הדרך הנמוכה ביותר. מעבירים ל-`doing` ופותחים ענף.
+- **הצגת הלוח:** `gh issue list --milestone "M4 — …" --label "status: doing"`.
 
-**נכנס:** `index.html`, `css/`, `js/`, `template/`, `tools/`, `tests.html`, `README.md`, `SPEC.md`, `Practice.md`, `.claude/launch.json`, `.gitignore`.
+## 7. מה נכנס ל-Git ומה לא
 
-**לא נכנס** (מוגדר ב-`.gitignore`):
+**נכנס:** `index.html`, `css/`, `js/`, `template/`, `tools/`, `tests/`, `evals/`, `.github/`, `.githooks/`, `.claude/launch.json`, `README.md`, `SPEC.md`, `architecture.md`, `CLAUDE.md`, `Practice.md`, `.gitignore`.
+
+**לא נכנס** (`.gitignore`):
 
 | נתיב | סיבה |
 |---|---|
 | `dist/` | קובץ שנוצר אוטומטית (`tools/build-artifact.ps1`) — אפשר לבנות מחדש בכל רגע |
 | `personal/` | קבצים אישיים |
 
-**מידע אישי לא עולה ל-GitHub לעולם.** למשל קובץ המערכת האישית `my-timetable.csv` (שמות מורים וחדרים) נשמר מחוץ לפרויקט, בתיקיית ההורדות. קישורים לגיליונות פרטיים, ציונים אמיתיים וסיסמאות או מפתחות — אסור לשמור בקוד או בקבצי הדוגמה.
-
-## 7. תיעוד מתעדכן יחד עם הקוד
-
-באותו commit של השינוי מעדכנים גם:
-
-- `README.md` — אם השתנה משהו שמשתמש רואה או מפעיל.
-- `SPEC.md` — אם התקבלה החלטה או השתנה מאפיין; מוסיפים שורה ליומן ההחלטות (`D<מספר>`).
-- `tests.html` — בדיקה חדשה לכל לוגיקה חדשה (זיהוי, חישוב, פענוח קבצים).
+**מידע אישי לא עולה ל-GitHub לעולם:** מערכת שעות אישית (שמות מורים וחדרים), ציונים אמיתיים, אסימונים (Airtable/Apify) וקישורים לגיליונות פרטיים. נתוני בדיקה נכתבים עם שמות לדוגמה.
 
 ## 8. מה אסור בלי אישור מפורש
 
-- `git push --force` או כל שכתוב היסטוריה (`reset --hard`, `rebase` על commits שכבר הועלו).
+- דחיפה ישירה ל-`master`, `git push --force` או כל שכתוב היסטוריה (`reset --hard`, `rebase` על commits שכבר הועלו).
+- מיזוג כשה-check `tests` אדום, או עקיפת השער (`--no-verify`).
 - מחיקת ענפים או קבצים שלא נוצרו בסשן הנוכחי.
-- הוספת קבצים גדולים או קבצים בינאריים לא מוסברים.
-- דילוג על בדיקות או הוקים (`--no-verify`).
+- הוספת תלות, כלי build או קבצים בינאריים לא מוסברים.
+- שינוי הגדרות ההגנה של `master` (פרט למקרה חירום, ראו סעיף 9).
 
-## 9. הערות טכניות
+**ההגנה על `master` (החלטה D28):** נדרש Pull Request, נדרש ה-check `tests`, והכלל חל גם על מנהלי המאגר. אם ה-CI עצמו שבור ואי אפשר למזג —
+מתקנים את ה-CI בענף נפרד; במקרה חירום בלבד מכבים את ההגנה זמנית ב-Settings ← Branches, ומדליקים אותה מיד אחרי.
 
-- **אזהרת `LF will be replaced by CRLF`:** תקינה ב-Windows ואינה שגיאה; ה-commit מצליח.
-- **קידוד:** כל הקבצים ב-UTF-8. בקבצי JavaScript לא כותבים את התו `U+FFFD` ישירות — משתמשים ב-`String.fromCharCode(0xfffd)` (כלי הפרסום דוחה אותו).
-- **העתק מקומי של הפרויקט (למשל במחשב אחר):** מושכים שינויים עם `git pull` לפני שמתחילים לעבוד ולפני שבודקים.
-- **גרסה מאוחסנת (Artifact):** נבנית עם `tools/build-artifact.ps1` ומתפרסמת בנפרד מ-GitHub; היא לא חלק מה-commit.
+## 9. תיעוד מתעדכן יחד עם הקוד — באותו PR
 
-## 10. רשימת בדיקה מהירה לפני push
+- `architecture.md` — מודול חדש, שירות חיצוני חדש, מפתח אחסון חדש או מגבלה חדשה.
+- `SPEC.md` — החלטה חדשה (שורה ביומן, `D<מספר>`) או שינוי במאפיין.
+- `README.md` — כל מה שמשתמש רואה או מפעיל.
+- `tests/` — בדיקה לכל לוגיקה חדשה; `evals/` — נתונים מתויגים חדשים כשמופיעה ניסוח חדש בלוח המבחנים.
 
-- [ ] `tests.html` מציג `PASSED`
-- [ ] הפיצ'ר נבדק בדפדפן (עברית + טלפון)
-- [ ] אין מידע אישי בקבצים ששונו (`git status` נבדק)
-- [ ] `README.md` / `SPEC.md` עודכנו במידת הצורך
-- [ ] הודעת commit באנגלית + שורת `Co-Authored-By`
-- [ ] בוצע `git push` וה-hash דווח
+## 10. הערות טכניות
+
+- **אזהרת `LF will be replaced by CRLF`:** תקינה ב-Windows ואינה שגיאה.
+- **קידוד:** UTF-8. בקבצי JavaScript לא כותבים את התו `U+FFFD` ישירות — משתמשים ב-`String.fromCharCode(0xfffd)`.
+- **העתק מקומי אחר:** `git pull` לפני שמתחילים לעבוד.
+- **שרת הפיתוח** (`tools/serve.ps1`) מגיש גם תיקיות (`/tests/` ← `tests/index.html`), כמו GitHub Pages.
+- **גרסה מאוחסנת (Artifact):** נבנית עם `tools/build-artifact.ps1` ומתפרסמת בנפרד; היא לא חלק מה-commit.
+
+## 11. רשימת בדיקה מהירה לפני PR
+
+- [ ] הענף נוצר מ-`master` עדכני, בשם `סוג/נושא`
+- [ ] `tests/run.ps1` עובר (בדיקות + evals)
+- [ ] באג: יש בדיקה שנכשלה לפני התיקון
+- [ ] הפיצ'ר נבדק בדפדפן (עברית + טלפון); טקסט חדש בשתי השפות
+- [ ] אין מידע אישי בקבצים ששונו (`git status`)
+- [ ] `architecture.md` / `SPEC.md` / `README.md` עודכנו לפי הצורך
+- [ ] ה-PR מקושר לכרטיס (`Closes #…`), וה-check `tests` ירוק לפני מיזוג
