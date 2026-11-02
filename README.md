@@ -131,6 +131,16 @@ sign-in. See the roadmap in SPEC §12.
 | `tests.html` | Browser-run tests |
 | `tools/serve.ps1` | Static dev server without Node/Python |
 
+## Design notes (SPEC §6)
+
+- **Tokens:** all colours are CSS variables at the top of `css/styles.css`. `--border` is for decorative outlines (cards,
+  dividers); `--border-strong` is for the boundary of controls (chips, buttons, form fields, day pickers).
+- **Contrast is tested:** `tests.html` reads the real tokens and checks WCAG AA — text 4.5:1 on every surface, the accent
+  also as text, dark labels on the primary button, and 3:1 for control borders. Change a colour and the test tells you.
+- **Phone-first:** below 520 px the header is one swipeable row with a fade on the far edge (about 60 px instead of about
+  160 px), and `tests.html` loads the real page in a 375 px frame and fails if it scrolls sideways.
+- **Motion:** controls respond within 150–250 ms; the global `prefers-reduced-motion` rule turns all motion off.
+
 ## Hosted preview (Claude Artifact)
 
 `tools/build-artifact.ps1` builds `dist/artifact.html` (git-ignored): the whole site inlined into one HTML file that

@@ -3,11 +3,12 @@
   --bg: #0e1117;
   --surface: #161b26;
   --surface-2: #1e2533;
-  --border: #2a3345;
+  --border: #2a3345;        /* decorative outlines (cards, dividers) */
+  --border-strong: #64728e; /* boundaries of controls: 3:1+ on bg, surface and surface-2 (SPEC 6.7) */
   --text: #e8ecf4;
   --text-muted: #9aa5bc;
-  --primary: #7c6cff;
-  --primary-glow: rgba(124, 108, 255, 0.35);
+  --primary: #8a7dff;
+  --primary-glow: rgba(138, 125, 255, 0.35);
   --accent: #3ddbd9;
   --ok: #3ddc97;
   --warn: #ffb454;
@@ -56,7 +57,7 @@ bdi { unicode-bidi: isolate; }
 }
 .chip {
   display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 4px 12px;
-  border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
   font-size: 14px; font-weight: 500; text-decoration: none; white-space: nowrap;
 }
 button.chip:hover { background: var(--surface-2); }
@@ -68,10 +69,11 @@ button.chip:hover { background: var(--surface-2); }
 
 /* ---------- layout ---------- */
 .page { padding: var(--gutter); max-width: 1080px; margin-inline: auto; outline: none; }
-.grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
-.col-side { display: grid; gap: 16px; align-content: start; }
+.grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); /* minmax(0, …): a plain 1fr grows to the widest scrolling row inside it and pushes the page wider than a phone */ }
+.col-side { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.col-main { min-width: 0; }
 @media (min-width: 900px) {
-  .grid { grid-template-columns: 1.15fr 1fr; align-items: start; }
+  .grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
 }
 .card {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
@@ -84,8 +86,8 @@ button.chip:hover { background: var(--surface-2); }
 /* ---------- 7-day banner ---------- */
 .banner {
   border-radius: var(--radius); padding: 14px 16px; margin-block-end: 16px;
-  background: linear-gradient(135deg, rgba(124, 108, 255, 0.18), rgba(61, 219, 217, 0.1));
-  border: 1px solid rgba(124, 108, 255, 0.45);
+  background: linear-gradient(135deg, rgba(138, 125, 255, 0.18), rgba(61, 219, 217, 0.1));
+  border: 1px solid rgba(138, 125, 255, 0.45);
 }
 .banner-head { display: flex; align-items: center; gap: 10px; }
 .banner-head h2 { font-size: 16px; font-weight: 700; flex: 1; }
@@ -138,7 +140,7 @@ button.chip:hover { background: var(--surface-2); }
 .stat span { font-size: 12px; color: var(--text-muted); }
 
 .btn {
-  min-height: 44px; padding: 8px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  min-height: 44px; padding: 8px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong);
   background: var(--surface-2); font-weight: 600;
 }
 .btn:hover { background: #262e40; }
@@ -190,7 +192,7 @@ button.chip:hover { background: var(--surface-2); }
 .fab {
   position: fixed; inset-inline-end: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 30;
   width: 56px; height: 56px; border-radius: 50%; border: 0; font-size: 30px; line-height: 1; color: #0e1117;
-  background: linear-gradient(135deg, var(--primary), var(--accent)); box-shadow: 0 6px 24px rgba(124, 108, 255, 0.45);
+  background: linear-gradient(135deg, var(--primary), var(--accent)); box-shadow: 0 6px 24px rgba(138, 125, 255, 0.45);
 }
 .fab:hover { filter: brightness(1.08); }
 
@@ -203,7 +205,7 @@ button.chip:hover { background: var(--surface-2); }
 .field { display: grid; gap: 4px; }
 .field label { font-size: 13px; color: var(--text-muted); }
 .field input, .field select {
-  min-height: 44px; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  min-height: 44px; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong);
   background: var(--surface-2); width: 100%;
 }
 .field input[type='date'], .field input[type='time'] { color-scheme: dark; }
@@ -253,7 +255,7 @@ button.chip:hover { background: var(--surface-2); }
 .daychip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
 .daychip span {
   display: inline-grid; place-items: center; min-width: 44px; min-height: 40px; padding: 0 10px; border-radius: 999px;
-  border: 1px solid var(--border); background: var(--surface-2); font-size: 14px; font-weight: 600;
+  border: 1px solid var(--border-strong); background: var(--surface-2); font-size: 14px; font-weight: 600;
 }
 .daychip input:checked + span { background: var(--primary); border-color: var(--primary); color: #0e1117; }
 .daychip input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 2px; box-shadow: 0 0 0 4px var(--primary-glow); }
@@ -283,3 +285,30 @@ button.chip:hover { background: var(--surface-2); }
   .vcard .tag { margin-inline-start: auto; }
 }
 [hidden] { display: none !important; }
+
+/* ---------- design polish (SPEC 6.2 depth, 6.3 type, 6.6 motion) ---------- */
+/* depth through lightness: a faint light from the top lifts a card off the page (the hero keeps its own gradient border) */
+.card:not(.hero) { background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0) 45%), var(--surface); }
+
+/* every control answers the pointer within 150-250 ms; reduced-motion users get none (see the rule at the end) */
+.chip, .btn, .fab, .daychip span {
+  transition: background-color 0.18s ease-out, border-color 0.18s ease-out, transform 0.18s ease-out, filter 0.18s ease-out;
+}
+button.chip:hover, .btn:hover { border-color: var(--text-muted); }
+button.chip:active, .btn:active, .fab:active { transform: translateY(1px) scale(0.99); }
+
+/* titles break evenly instead of leaving one orphan word; short paragraphs avoid a lonely last word */
+h1, h2, h3 { text-wrap: balance; }
+.hint, .note, .empty { text-wrap: pretty; }
+
+/* phones: the header is one swipeable row (about 60 px) instead of three wrapped rows (about 160 px);
+   a chip cut off at the edge signals that there is more, and the padding keeps focus rings from being clipped */
+@media (max-width: 520px) {
+  .topbar { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding-block: 10px; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .topbar::-webkit-scrollbar { display: none; }
+  .topbar > * { flex: none; }
+  .logo { margin-inline-end: 6px; }
+  /* the fade at the far edge shows there is more to swipe to; the end padding keeps the last chip clear of it */
+  .topbar { padding-inline-end: 32px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
+  [dir='rtl'] .topbar { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); }
+}
