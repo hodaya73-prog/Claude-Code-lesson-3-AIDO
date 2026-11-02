@@ -42,6 +42,10 @@
 
   // the personal sheet source was removed (the timetable comes from Airtable): drop what older builds saved
   ['sheetLink', 'tabs', 'sheetId'].forEach((k) => store.del(k));
+
+  // screens: the dashboard, the tests list (#exams) and the study videos (#videos)
+  const VIEWS = ['dash', 'exams', 'videos'];
+  const viewFromHash = () => (VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'dash');
   const state = {
     lang: store.get('lang', (navigator.language || 'en').toLowerCase().startsWith('he') ? 'he' : 'en'),
     src: {
@@ -63,7 +67,8 @@
     manualLessons: store.get('manualLessons', []), // { id, weekday 1-7, start, end, subject, room }
     settings: { dailyCapMin: 180, weeklyGoalMin: 300, weakThreshold: 70, showHebrewDate: true },
     bannerCollapsed: false,
-    view: location.hash === '#videos' ? 'videos' : 'dash', // the second screen is reached through #videos
+    view: viewFromHash(),
+    examsUi: { filter: 'all', sort: 'date' }, // what the tests list shows right now (not saved)
     apify: {
       token: store.get('apifyToken', ''), // the student's Apify API token — stays on this device only
       cache: store.get('apifyVideos', {}), // query → { at, query, subject, videos }
@@ -265,7 +270,10 @@
       <div class="logo"><i aria-hidden="true">✦</i>${esc(t('appName'))}</div>
       ${avg}
       ${status}
-      <button class="chip" data-action="view" data-view="${state.view === 'videos' ? 'dash' : 'videos'}">${state.view === 'videos' ? '🏠 ' + esc(t('navDash')) : '🎬 ' + esc(t('navVideos'))}</button>
+      ${[['dash', '🏠', 'navDash'], ['exams', '📝', 'navExams'], ['videos', '🎬', 'navVideos']]
+        .filter(([v]) => v !== state.view) // the screen you are on is not offered again
+        .map(([v, ico, key]) => `<button class="chip" data-action="view" data-view="${v}">${ico} ${esc(t(key))}</button>`)
+        .join('')}
       <button class="chip" data-action="sources">📄 ${esc(t('sources'))}</button>
       <button class="chip" data-action="lang" lang="${state.lang === 'he' ? 'en' : 'he'}">${esc(t('language'))}</button>`;
   }
@@ -456,17 +464,86 @@
     document.documentElement.lang = state.lang;
     document.documentElement.dir = state.lang === 'he' ? 'rtl' : 'ltr';
     const videos = state.view === 'videos';
-    $('.grid').hidden = videos;
-    $('#banner').hidden = videos;
+    const exams = state.view === 'exams';
+    $('.grid').hidden = videos || exams;
+    $('#banner').hidden = videos || exams;
     $('#videos').hidden = !videos;
+    $('#exams').hidden = !exams;
     $('#fab').hidden = videos;
     renderStatic();
     renderTop();
     if (videos) return renderVideos(false);
+    if (exams) return renderExams(false);
     renderBanner();
     renderHero();
     renderSchedule();
     renderMission();
+  }
+
+  // ---------- tests list screen (SPEC §4.1.5) ----------
+  const EX_FILTERS = [['all', 'exAll'], ['week', 'exWeek'], ['month', 'exMonth'], ['bagrut', 'exBagrut'], ['done', 'exDone']];
+
+  function examSource(e) {
+    if (e.source === 'local') return t('local');
+    if (e.source === 'calendar') return t('exSrcCalendar');
+    if (e.source === 'sample') return t('exSrcSample');
+    return t('exSrcSheet');
+  }
+
+  function examRow(e, c) {
+    const n = now();
+    const past = e.startsAt <= n;
+    const cd = L.countdown(e, n);
+    const r = past ? null : L.readiness(e, c, n);
+    const icon = r ? { ontrack: '✓', tight: '◐', boost: '↑' }[r.status] : '';
+    const meta = [typeName(e.type) + (e.moed === 'B' ? ' · ' + t('moedB') : ''), fmtDate(e.startsAt, true), e.noTime ? '' : fmtTime(e.startsAt), lessonSlot(e)]
+      .filter(Boolean)
+      .map((x) => `<span>${esc(x)}</span>`)
+      .join('');
+    const side = past
+      ? `<span class="tag">${esc(t('exDone'))}</span>`
+      : `<span class="cdchip" data-level="${cd.level}">${esc(when(e))}</span>
+         <span class="badge sm ${r.status}"><span aria-hidden="true">${icon}</span>${esc(t(r.status))}</span>`;
+    return `<li class="exrow${past ? ' done' : ''}">
+      <span class="bar" style="background:${color(e.subject)}"></span>
+      <div class="ex-main"><div class="ex-title">${label(e.subject, e.title)}</div>
+        <div class="ex-meta">${meta}<span class="tag">${esc(examSource(e))}</span></div></div>
+      <div class="ex-side">${side}${e.source === 'local' ? `<button class="btn btn-danger ex-del" data-action="delLocal" data-id="${esc(e.id)}" aria-label="${esc(t('delete'))}">✕</button>` : ''}</div></li>`;
+  }
+
+  // force=false is the 30-second refresh: it must not close the sort menu, and it puts focus back on the chip you were on
+  function renderExams(force) {
+    const el = $('#exams');
+    const fa = el.contains(document.activeElement) ? document.activeElement : null;
+    if (!force && fa && fa.tagName === 'SELECT') return;
+    const ui = state.examsUi;
+    const all = allExams();
+    const n = now();
+    const list = L.examsFilter(all, ui.filter, n, ui.sort);
+    const c = ctx();
+    const chips = EX_FILTERS.map(
+      ([k, key]) => `<button class="chip" data-action="exFilter" data-filter="${k}" aria-pressed="${ui.filter === k}">${esc(t(key))} <span class="n">${L.examsFilter(all, k, n).length}</span></button>`
+    ).join('');
+    let body;
+    if (!all.length) body = `<div class="card"><div class="empty"><b>${esc(t('exEmpty'))}</b>${esc(t('exEmptyHint'))}</div></div>`;
+    else if (!list.length) body = `<div class="card"><div class="empty">${esc(t('exEmptyFilter'))}</div></div>`;
+    else body = `<ul class="exlist">${list.map((e) => examRow(e, c)).join('')}</ul>`;
+    el.innerHTML = `
+      <div class="exams-head"><h2>${esc(t('exTitle'))}</h2>
+        <button class="btn btn-primary" data-action="menuTest">＋ ${esc(t('addTest'))}</button></div>
+      <div class="filters" role="group" aria-label="${esc(t('exTitle'))}">${chips}</div>
+      <div class="exams-tools"><span class="note" role="status">${esc(countText(list.length, 'exCount'))}</span>
+        <label class="sortlbl">${esc(t('exSort'))}
+          <select id="exSort" data-exsort>
+            <option value="date"${ui.sort === 'date' ? ' selected' : ''}>${esc(t('exSortDate'))}</option>
+            <option value="subject"${ui.sort === 'subject' ? ' selected' : ''}>${esc(t('exSortSubject'))}</option>
+          </select></label></div>
+      ${body}`;
+    if (fa) {
+      const sel = fa.dataset.filter ? `[data-filter="${fa.dataset.filter}"]` : fa.id ? '#' + fa.id : null;
+      const again = sel && el.querySelector(sel);
+      if (again) again.focus();
+    }
   }
 
   // ---------- second screen: study videos found through Apify ----------
@@ -1186,7 +1263,11 @@
       bump();
       render();
     } else if (a === 'grades') openGrades();
-    else if (a === 'view') location.hash = el.dataset.view === 'videos' ? 'videos' : 'dash';
+    else if (a === 'view') location.hash = VIEWS.includes(el.dataset.view) ? el.dataset.view : 'dash';
+    else if (a === 'exFilter') {
+      state.examsUi.filter = el.dataset.filter;
+      renderExams(true);
+    }
     else if (a === 'vSearch') runVideoSearch();
     else if (a === 'apifySave') saveApifyToken();
     else if (a === 'apifyRemove') removeApifyToken();
@@ -1248,6 +1329,10 @@
     }
   });
   document.addEventListener('change', (ev) => {
+    if (ev.target.matches('[data-exsort]')) {
+      state.examsUi.sort = ev.target.value;
+      return renderExams(true);
+    }
     const task = ev.target.closest('[data-action="task"]');
     if (task) return toggleTask(task.dataset.id, task.checked);
     const url = ev.target.closest('[data-url]');
@@ -1278,8 +1363,7 @@
   });
   window.addEventListener('hashchange', () => {
     // other links (e.g. "skip to content") also change the hash and must not switch screens
-    if (location.hash === '#videos') setView('videos');
-    else if (location.hash === '#dash') setView('dash');
+    if (VIEWS.includes(location.hash.slice(1))) setView(viewFromHash());
   });
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Enter' && ev.target.matches) {

@@ -109,6 +109,26 @@
     return upcoming(exams, now).filter((e) => daysBetween(now, e.startsAt) <= 7);
   }
 
+  // Exams screen filters (SPEC §4.1.5). Every filter except "done" lists upcoming tests, soonest first;
+  // "week" is the current Sunday–Saturday week, "month" the current calendar month, "done" the tests that already
+  // passed, most recent first. Sort 'subject' orders by subject name, then date.
+  function examsFilter(exams, key, now, sort) {
+    const byDate = [...exams].sort((a, b) => a.startsAt - b.startsAt);
+    let list;
+    if (key === 'done') list = byDate.filter((e) => e.startsAt <= now).reverse();
+    else {
+      list = byDate.filter((e) => e.startsAt > now);
+      if (key === 'week') {
+        const end = addDays(addDays(startOfDay(now), -now.getDay()), 7);
+        list = list.filter((e) => e.startsAt < end);
+      } else if (key === 'month') {
+        list = list.filter((e) => e.startsAt.getFullYear() === now.getFullYear() && e.startsAt.getMonth() === now.getMonth());
+      } else if (key === 'bagrut') list = list.filter((e) => e.type === 'bagrut');
+    }
+    if (sort === 'subject') list = [...list].sort((a, b) => a.subject.localeCompare(b.subject, 'he') || a.startsAt - b.startsAt);
+    return list;
+  }
+
   // SPEC §9.13: ≥3 tests within 4 consecutive days, or ≥2 on the same day
   function findCluster(exams, ctx, now) {
     const list = upcoming(exams, now);
@@ -250,7 +270,7 @@
       DAY, pad, ymd, parseYmd, startOfDay, addDays, daysBetween, sameDay, timeToMin, weekdayOf,
       lessonsOn, entriesOn, isHoliday, freeMinutesOn,
       neededMinutes, availableMinutes, loggedMinutes, readiness, countdown, upcoming,
-      weekNotice, findCluster,
+      weekNotice, findCluster, examsFilter,
       subjectAverage, trendSlope, trendLabel, gradeSummary,
       buildTasks, pickMission, streak, weekMinutes,
     },

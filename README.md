@@ -30,6 +30,7 @@ worked examples from SPEC §9).
   (RTL flips automatically; Hebrew date shown by default in Hebrew).
 - **Quick add "+":** local tests, hand-entered grades and a hand-entered timetable — saved on the device only and never written to a sheet.
 - **Focus timer:** 25-minute session that logs study time (feeds readiness, streak and weekly goal).
+- **Tests screen (SPEC §4.1.5, `#exams`):** every test as a row — subject colour, type, date and time, lesson period, a countdown, the readiness badge and its source (school calendar / local / sample). Filter chips with counts (All · This week · This month · Bagrut · Done — "week" is Sunday–Saturday, "done" are tests that already passed), sort by date or subject, and a button to add a local test. Local tests can be deleted from the list. Reached from the header; the other screens are the dashboard and the study videos.
 - **Sample data** is built relative to today, so the dashboard always looks alive.
 
 ## Data sources
@@ -114,7 +115,7 @@ Not available in the hosted Artifact preview (network blocked). Logic lives in `
 
 ## Not built yet
 
-Calendar, Exams, Grades and Settings pages, exam-calendar filtering by class/track, bagrut tracker, push/email notifications, simple mode, real Google
+Calendar, Grades and Settings pages, exam detail screen (§4.1.6), exam-calendar filtering by class/track, bagrut tracker, push/email notifications, simple mode, real Google
 sign-in. See the roadmap in SPEC §12.
 
 ## Files
